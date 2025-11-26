@@ -10,3 +10,7 @@ editor_options:
 
 Before we get to writing any functions that we use, let's make sure that we load in the necessary packages we need. We can also include some handy code that searches for the package and installs it in the event that it is not already installed on the device that is running the code.
 
+
+
+
+[Click here for the EDA Page](EDA.html)
