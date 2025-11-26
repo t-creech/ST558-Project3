@@ -1,0 +1,11 @@
+---
+title: "Project 3"
+format: html
+toc: TRUE
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Project Introduction
+
+In this project, we will be implementing a model and allowing it to be accessed by an API through Docker!

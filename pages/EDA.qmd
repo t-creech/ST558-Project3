@@ -1,0 +1,11 @@
+---
+title: "Exploratory Data Analysis"
+format: html
+toc: TRUE
+editor_options: 
+  chunk_output_type: inline
+---
+
+## Package Imports
+First, we can import the necessary packages we need.
+
