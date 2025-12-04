@@ -82,7 +82,8 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#package-imports" id="toc-package-imports" class="nav-link active" data-scroll-target="#package-imports">Package Imports</a></li>
+  <li><a href="#data-introduction" id="toc-data-introduction" class="nav-link active" data-scroll-target="#data-introduction">Data Introduction</a></li>
+  <li><a href="#package-imports" id="toc-package-imports" class="nav-link" data-scroll-target="#package-imports">Package Imports</a></li>
   </ul>
 </nav>
     </div>
@@ -108,6 +109,18 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="data-introduction" class="level2">
+<h2 class="anchored" data-anchor-id="data-introduction">Data Introduction</h2>
+<p>The data that we are using for this project is a <a href="https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset?resource=download&amp;select=diabetes_binary_health_indicators_BRFSS2015.csv">Kaggle Date Set</a> investigating diabetes and its connection to a number of different quantitative and qualitative features. In total, the data set contains 21 features ranging from lifestyle decisions to income levels that were recorded in a survey performed by the CDC and a target variable of whether the survey respondent has diabetes. The data set contains 253,680 survey responses and is not balanced.</p>
+<p>Of the 21 available features, 5 were selected to investigate and use in our models. These 5 features include:</p>
+<ul>
+<li>BMI:</li>
+<li>PhysActivity:</li>
+<li>AnyHealthcare:</li>
+<li>Income:</li>
+<li>Age:</li>
+</ul>
+</section>
 <section id="package-imports" class="level2">
 <h2 class="anchored" data-anchor-id="package-imports">Package Imports</h2>
 <p>First, we can import the necessary packages we need.</p>

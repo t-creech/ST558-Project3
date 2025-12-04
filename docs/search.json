@@ -4,20 +4,34 @@
     "href": "EDA.html",
     "title": "Exploratory Data Analysis",
     "section": "",
-    "text": "First, we can import the necessary packages we need.\nClick here for the Modeling Page"
+    "text": "The data that we are using for this project is a Kaggle Date Set investigating diabetes and its connection to a number of different quantitative and qualitative features. In total, the data set contains 21 features ranging from lifestyle decisions to income levels that were recorded in a survey performed by the CDC and a target variable of whether the survey respondent has diabetes. The data set contains 253,680 survey responses and is not balanced.\nOf the 21 available features, 5 were selected to investigate and use in our models. These 5 features include:\n\nBMI:\nPhysActivity:\nAnyHealthcare:\nIncome:\nAge:"
+  },
+  {
+    "objectID": "EDA.html#data-introduction",
+    "href": "EDA.html#data-introduction",
+    "title": "Exploratory Data Analysis",
+    "section": "",
+    "text": "The data that we are using for this project is a Kaggle Date Set investigating diabetes and its connection to a number of different quantitative and qualitative features. In total, the data set contains 21 features ranging from lifestyle decisions to income levels that were recorded in a survey performed by the CDC and a target variable of whether the survey respondent has diabetes. The data set contains 253,680 survey responses and is not balanced.\nOf the 21 available features, 5 were selected to investigate and use in our models. These 5 features include:\n\nBMI:\nPhysActivity:\nAnyHealthcare:\nIncome:\nAge:"
   },
   {
     "objectID": "EDA.html#package-imports",
     "href": "EDA.html#package-imports",
     "title": "Exploratory Data Analysis",
-    "section": "",
-    "text": "First, we can import the necessary packages we need.\nClick here for the Modeling Page"
+    "section": "Package Imports",
+    "text": "Package Imports\nFirst, we can import the necessary packages we need.\nClick here for the Modeling Page"
   },
   {
     "objectID": "Modeling.html",
     "href": "Modeling.html",
     "title": "Modeling",
     "section": "",
-    "text": "Packages\nBefore we get to writing any functions that we use, let’s make sure that we load in the necessary packages we need. We can also include some handy code that searches for the package and installs it in the event that it is not already installed on the device that is running the code.\nClick here for the EDA Page"
+    "text": "Before we get to writing any functions that we use, let’s make sure that we load in the necessary packages we need. We can also include some handy code that searches for the package and installs it in the event that it is not already installed on the device that is running the code."
+  },
+  {
+    "objectID": "Modeling.html#packages",
+    "href": "Modeling.html#packages",
+    "title": "Modeling",
+    "section": "",
+    "text": "Before we get to writing any functions that we use, let’s make sure that we load in the necessary packages we need. We can also include some handy code that searches for the package and installs it in the event that it is not already installed on the device that is running the code."
   }
 ]
