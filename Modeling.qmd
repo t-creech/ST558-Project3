@@ -5,17 +5,244 @@ toc: TRUE
 editor_options: 
   chunk_output_type: inline
 ---
+## Modeling Introduction
 
-## Packages
+Time to model! In our EDA portion, we provided some information about the data we are modeling as well as went through some of our features of interest that we will be incorporating into our model. The data that we are using for our model is a [Kaggle Date Set](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset?resource=download&select=diabetes_binary_health_indicators_BRFSS2015.csv) investigating diabetes and its connection to a number of different quantitative and qualitative features. The dataset contains 253,680 survey responses and is not balanced.
 
-Before we get to writing any functions that we use, let's make sure that we load in the necessary packages we need. We can also include some handy code that searches for the package and installs it in the event that it is not already installed on the device that is running the code.
+5 were selected use in our models. These 5 features include:
+
+* BMI: Body Mass Index of the individual (numeric)
+* PhysActivity: Indicator of whether the individual has partaken in physical activity in the past 30 days (encoded 0 = no and 1 = yes)
+* AnyHealthcare: Indicator of whether the individual has any kind of health care coverage (encoded 0 = no and 1 = yes)
+* Smoker: Indicator of whether the individual has smoked at least 100 cigarettes in their life (encoded 0 = no and 1 = yes)
+* GenHlth: Response of individual when asked to rate general health on scale of 1-5. (1 = excellent to 5 = poor)
+
+The goal of our model is to predict the value of a target variable:
+
+* Diabetes_binary: Whether or not the individual has diabetes. (encoded 0 = no diabetes and 1 = prediabetic or diabetic)
+
+In the modeling portion, we will look into two specific types of tree models. These models will be further described later on, but include:
+
+* Classification Tree
+* Random Forest
+
+Before fitting the models, we will split our data into a 70/30 training-test split. We will fit each model using a number of different model parameters and use 5-fold cross validation on the training data to choose the best model of each class. Then, we will run the each of the best models from each class on the testing set and compare the results to choose one champion model. We will be using log-loss to evaluate our models and determine which models perform best.
+
+## Modeling
+
+### Packages and Data Load
+First, let's make sure that we load in the necessary packages we need. We will be using the tidymodels framework to model the data so we will go ahead and load in tidyverse and tidymodels. Additionally, we will add in the ranger library for our random forest engine and future to allow for multithreading. We will also go ahead and load in the RDS file containing the data from the EDA portion. Also, we will need to make one adjustment to our data. Since tidymodels treats the first factor of the target variable as "positive", it will be helpful for interpretation if we ensure our "Yes" value is our first factor.
 
 ```{R}
+library(tidymodels)
+library(tidyverse)
+library(ranger)
+library(future) #for multithread (thanks Norman!)
+plan(multisession, workers = 10)
 
+model_data <- read_rds("data/model_data.RDS")
 
+# Ensure yes is the first level of our target factor
+model_data <- model_data |>
+  mutate(Diabetes_binary = factor(Diabetes_binary, levels = c("Yes", "No")))
+
+# Check levels
+levels(model_data$Diabetes_binary)
+# Check tibble
+head(model_data)
+```
+Great, it looks like our data was loaded in successfully.
+
+### Preparing the Data for Modeling
+
+Before we can model the data, we need to go ahead and split the data into our testing and training sets. Since this split is random, we will go ahead and set a seed so our results are reproducible.
+
+```{R}
+set.seed(42)
+
+# Split the data and save each split to tibble
+data_split <- initial_split(model_data, prop = 0.70)
+train_data <- training(data_split)
+test_data <- testing(data_split)
+
+# Check split to ensure that it follows specified proportion
+ifelse(nrow(train_data) == nrow(model_data) * 0.70, TRUE, FALSE)
 
 ```
 
+Based on our required proportion check, it appears our data was split correctly. Next, we will go ahead and set up our 5-fold CV into our training set.
 
+```{R}
+# Set up 5-fold validation
+train_5_fold <- vfold_cv(train_data, 5)
+```
 
+Now that we have our cross validation set up, let's go ahead and prepare our recipe for our model fitting. Since most of our features are fairly simple, our recipe will be as well. Since we are using tree models, we should not need to normalize or create dummies for any of our predictors. Therefore out recipe is simply specifying our model.
+
+```{R}
+# Set up recipe
+recipe <- recipe(Diabetes_binary ~ ., data = train_data)
+```
+
+### Classification Tree
+
+A classification tree is the simplest tree based model that uses one tree to produce a prediction. The overall goal of the tree is to split up the predictor space into regions with each region producing a prediction. In the case of classification, this prediction is simply the most prevalent class in that region. As for how a classification tree splits the predictors space, it is typically fit using recursive binary splitting. This is a greedy algorithm that aims to minimize some form of loss function based on where splits are made.
+
+These models benefit from being extremely interpretable as you can directly follow the reasoning that the prediction is made. Additionally, they benefit from being more flexible in their ability to handle non-linearity in relationships. The main downside of classification trees are that we often see a high amount of variability in the results as small changes in the data being fed into the model can vastly change the splits of the tree and they are very prone to overfitting to our training data if they are allowed to become very deep and complex. For this reason, we will use our 5-fold cross validation to tune the cost-complexity parameter to ensure our model is not overfitting.
+
+Now that we have an understanding of classification trees, we can use tidymodels to set up our model and engine. We are going to use our cross validation to tune the cost-complexity of our model, so we will set this to tune and leave the rest to their defaults.
+
+```{R}
+
+# Classification tree set up
+tree_mod <- decision_tree(cost_complexity = tune()) |>
+  set_engine("rpart") |>
+  set_mode("classification")
+
+```
+
+Next, we will set up the workflow.
+
+```{R}
+tree_wkf <- workflow() |>
+  add_recipe(recipe) |>
+  add_model(tree_mod)
+```
+
+### Random Forest
+
+Next, we can turn our attention to random forest models. Random forest models are an ensemble tree modeling method that have some enhancements that are implemented to combat some of the shortcomings of classification trees. Instead of building a single tree, random forest instead builds a "forest" of trees that have randomness built into how they are trained in an effort to produce variations between each tree structure. In order to determine a final prediction, the result of each tree is averaged, and in the case of classification determined by which group has the most "votes" by each tree. These measures aim to reduce variance and make the tree less prone to overfitting when compared to a individual tree.
+
+In random forest models, randomness is introduced into each individual tree fit in two different ways. The first is through bootstrapping from the training data with replacement to get mutiple samples to fit on. Each tree is then fit on a different sample and therefore a different tree is produced. This concept is known as bagging. Additionally, random forest models only use a subset of the predictor space at each split. This is done in an effort to reduce correlation between trees that is typically caused by really strong predictors being used for the initial splits. Since some of the trees will not "see" this predictor at the first split, they are forced to split the data using the remaining predictors. This is a parameter, mtry, that can be adjusted in our model and tuned through cross validation. Both of these come together to generate many different trees that help to reduce the variance of the model at the cost of making the model less interpretable.
+
+Now that we have an understanding of random forest, we can use tidymodels to set up our model and engine. We are going to use our cross validation to tune the mtry of our model, so we will set this to tune and leave the rest to their defaults.
+
+```{R}
+
+# Classification random forest set up
+rf_mod <- rand_forest(mtry = tune(), trees = 500) |>
+  set_engine("ranger") |>
+  set_mode("classification")
+
+```
+
+Next, we will set up the workflow.
+
+```{R}
+rf_wkf <- workflow() |>
+  add_recipe(recipe) |>
+  add_model(rf_mod)
+```
+
+### Fitting our CV Folds
+
+Now that we have our models set up, it is now time to fit them on our CV folds to select the best model for each class. First, we will go ahead and set up a tuning grid for each model. Since we are only tuning one parameter, there isn't really necessity to set up a grid, but we can tell it how many values we would like to search of that parameter. For the classification tree, we will use 10 since that covers most of the reasonable cost complexities. For our random forest grid, we will use 5 so mtry can search using all possible number of predictors (up to 5 in this case).
+
+```{R}
+# Classification tree tuning grid
+tree_grid <- grid_regular(cost_complexity(), levels = 10)
+# Random forest grid
+rf_grid <- tibble(mtry = 1:5)
+```
+
+Now that we have those set up, let's fit our models.
+
+```{R}
+# Fitting our classification tree model
+tree_fit <- tree_wkf |>
+  tune_grid(resamples = train_5_fold,
+            grid = tree_grid,
+            metrics = metric_set(accuracy, mn_log_loss))
+
+# Fitting our random forest model
+rf_fit <- rf_wkf |>
+  tune_grid(resamples = train_5_fold,
+            grid = rf_grid,
+            metrics = metric_set(accuracy, mn_log_loss))
+
+```
+
+### Determining Best Model from Each Class
+
+Now that we have fit the models for each class, we can look at our result. Since we are choosing the best model based on log loss, we can take the fit and simply collect our metrics and filter for log loss and sort it.
+
+```{R}
+# Filter metrics for tree fit
+tree_fit |> collect_metrics() |>
+  filter(.metric == "mn_log_loss") |>
+  arrange(mean)
+# Filter metrics for rf fit
+rf_fit |> collect_metrics() |>
+  filter(.metric == "mn_log_loss") |>
+  arrange(mean)
+```
+
+From our model fit, it appears that the best performing classification tree model had a cost_complexity of 1e-10 and the best random forest model had and mtry of 2. We can now use these parameter values going forward. Now that we found the best parameters, we can go ahead and save them.
+
+```{R}
+# Storing parameters
+tree_best_params <- select_best(tree_fit, metric = "mn_log_loss")
+rf_best_params <- select_best(rf_fit, metric = "mn_log_loss")
+```
+
+Now, we can finalize our workflow for each class of model to prepare to retrain them on the entirity of the training set and test on the test set.
+
+```{R}
+# Final tree workflow
+tree_final_wkf <- tree_wkf |>
+  finalize_workflow(tree_best_params)
+
+# Final random forest workflow
+rf_final_wkf <- rf_wkf |>
+  finalize_workflow(rf_best_params)
+```
+
+### Comparing the Two Best Models from Each Class
+
+Now that we have our final workflow for each class, we can refit each of the models on the entire training set so we can compare the two with the test set.
+
+```{R}
+# Fit the final tree
+tree_final_fit <- tree_final_wkf |>
+  last_fit(data_split, metrics = metric_set(accuracy, mn_log_loss))
+# Fit the final random forest
+rf_final_fit <- rf_final_wkf |>
+  last_fit(data_split, metrics = metric_set(accuracy, mn_log_loss))
+```
+
+Since the model have been fit, we can simply take a look at the metrics and see which performed the best!
+```{R}
+# Collect metrics for each model
+tree_final_fit |> collect_metrics()
+rf_final_fit |> collect_metrics()
+```
+Based on the results of our final fit, it appears that the random forest algorithm ended up performing slightly better than the classification tree with a slightly lower log-loss.
+
+Let's dive deeper into these results by making a confusion matrix.
+
+```{R}
+# Get the predictions from the final fit
+predictions <- rf_final_fit |> collect_predictions()
+# Create a confusion matrix
+conf_mat(predictions, truth = Diabetes_binary, estimate = .pred_class)
+```
+
+From the confusion matrix, we can clearly tell that the model is not near sensitive enough and produces an overwhelming amount of no predictions. This could be due to multiple factors. The two primary causes are likely the unbalanced nature of the data and the lack of a very decisive feature in our feature set. 
+
+### Fitting the Model to the Full Dataset
+
+Now that we have our "champion" model. We can go ahead and fit the model on the entirety of the dataset.
+
+```{R}
+# Fit full random forest model
+rf_full_model <- rf_final_wkf |> fit(model_data)
+```
+
+Now for convenience when setting up the API endpoint, we can save this full model as an RDS.
+
+```{R}
+saveRDS(rf_full_model, file = "model/full_model.RDS")
+```
+
+## Link to EDA Page
 [Click here for the EDA Page](EDA.html)

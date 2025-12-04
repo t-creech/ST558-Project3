@@ -47,9 +47,10 @@ Now that we have the necessary package loaded to perform EDA on our data, we wil
 While GenHealth is categorical in a way (with numeric 1-5 being interpreted as a different category of one's view of their health), I have decided to maintain this feature as integer due to the ordinal nature of the feature in hopes that the model is able to capture this ordinality. Also for general interpretability, a 1-5 rating is fairly simple to interpret as long as we keep in mind that 1 is the most healthy and 5 is the least.
 
 ```{R}
-
+# Read in data
 data <- read_csv(file = "data/diabetes_binary_health_indicators_BRFSS2015.csv")
 
+# Mutate data to create factors for binary variables
 model_data <- data |> select(Diabetes_binary, BMI, PhysActivity, AnyHealthcare, Smoker, GenHlth) |>
   mutate(Diabetes_binary = ifelse(Diabetes_binary == 1, "Yes", "No")) |>
   mutate(PhysActivity= ifelse(PhysActivity == 1, "Yes", "No")) |>
@@ -67,7 +68,7 @@ Great, the data turned out just as we expected.
 Next, we are going to check our data for missing values to ensure we have a complete dataset and don't have a need to impute values.
 
 ```{R}
-
+# Describe data using psych decribe to check missingness and realism
 describe(model_data)
 
 ```
@@ -80,7 +81,7 @@ For the next step of EDA, we will go ahead and make contingency tables for each 
 
 ```{R}
 
-
+# Create proportional contingency tables for each categorical feature
 prop.table(table(model_data[, c("Diabetes_binary", "PhysActivity")]))
 prop.table(table(model_data[, c("Diabetes_binary", "AnyHealthcare")]))
 prop.table(table(model_data[, c("Diabetes_binary", "Smoker")]))
@@ -90,7 +91,7 @@ prop.table(table(model_data[, c("Diabetes_binary", "Smoker")]))
 These contingency tables are a little difficult to interpret considering some of the features and our target are fairly unbalanced, so let's try to investigate this in a slightly different way. We are really interested in seeing whether a larger than expected proportion of a specific class of the feature has diabetes. To help with this, we can investigate this through the lens of conditional probabilities. For a feature to have predictive power, we would expect $P(\text{Diabetes = Yes | Feature = Yes}) \neq P(\text{Diabetes = Yes | Feature = No})$. In other words, the proportion of individuals with diabetes should differ between feature categories. We can investigate these conditional probabilities next.
 
 ```{R}
-
+# Create conditional tables for each categorical feature
 model_data |>
   group_by(PhysActivity) |>
   summarize(prop_diabetes = mean(Diabetes_binary == "Yes"))
@@ -114,14 +115,14 @@ Next, we will look at the two numeric features we are planning to use in our mod
 First, we will investigate the relationship between BMI and diabetes. First, we can create a table breaking down the summary statistics of BMI by diabetes status. Then, we can use a density plot to see how the density of BMI might differ for those that have diabetes vs. those that do not.
 
 ```{R}
-
+# Summarize BMI based on diabetes status
 model_data |>
   group_by(Diabetes_binary) |>
   summarise(
     mean_BMI = mean(BMI),
     sd_BMI = sd(BMI)
   )
-
+# Density plot filled by diabetes status
 model_data |>
   ggplot(aes(x = BMI, fill = Diabetes_binary)) +
   geom_density(alpha = 0.4) +
@@ -133,14 +134,14 @@ Based on the table, we can see that the mean BMI for those with diabetes is slig
 Next, we will look at our GenHealth feature. We can perform the same process here, except instead of using a density plot, it might be helpful to use a bar chart of the proportions since the feature includes only integer values between 1 and 5.
 
 ```{R}
-
+# Summarize GenHlth based by diabetes status
 model_data |>
   group_by(Diabetes_binary) |>
   summarise(
     mean_BMI = mean(GenHlth),
     sd_BMI = sd(GenHlth)
   )
-
+# Plot double bar graph of GenHlth by diabetes status
 model_data |>
   ggplot(aes(x = GenHlth, fill = Diabetes_binary)) +
   geom_bar(position = "Dodge") +
@@ -153,7 +154,7 @@ This tells us a similar story to BMI, as those with diabetes ranked themselves a
 For this feature, it might also be helpful to look more into the conditional probabilities as well. Specifically, it might be interesting to look at $P(\text{Diabetes | GenHelth)}$. To do this we can use a proportional bar graph.
 
 ```{R}
-
+# Plot bar graph of conditional proportions for each GenHlth
 model_data |>
   ggplot(aes(x = GenHlth, fill = Diabetes_binary)) +
   geom_bar(position = "fill") +
@@ -166,6 +167,7 @@ This shows us more interesting interactions between these two variables as those
 That wraps up the EDA portion, so now let's move on to the models! Fisrt, since we made some changes to the dataset, we will go ahead and save it as an RDS file, so we can easily access it in our modeling notebook.
 
 ```{R}
+# Save as an RDS
 saveRDS(model_data, file = "data/model_data.RDS")
 ```
 

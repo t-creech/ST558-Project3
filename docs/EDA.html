@@ -20,6 +20,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -67,6 +102,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -83,7 +147,15 @@ ul.task-list li input[type="checkbox"] {
    
   <ul>
   <li><a href="#data-introduction" id="toc-data-introduction" class="nav-link active" data-scroll-target="#data-introduction">Data Introduction</a></li>
+  <li><a href="#eda" id="toc-eda" class="nav-link" data-scroll-target="#eda">EDA</a>
+  <ul class="collapse">
   <li><a href="#package-imports" id="toc-package-imports" class="nav-link" data-scroll-target="#package-imports">Package Imports</a></li>
+  <li><a href="#data-preprocessing" id="toc-data-preprocessing" class="nav-link" data-scroll-target="#data-preprocessing">Data Preprocessing</a></li>
+  <li><a href="#missingness-and-distribution" id="toc-missingness-and-distribution" class="nav-link" data-scroll-target="#missingness-and-distribution">Missingness and Distribution</a></li>
+  <li><a href="#categorical-features" id="toc-categorical-features" class="nav-link" data-scroll-target="#categorical-features">Categorical Features</a></li>
+  <li><a href="#numeric-features" id="toc-numeric-features" class="nav-link" data-scroll-target="#numeric-features">Numeric Features</a></li>
+  </ul></li>
+  <li><a href="#link-to-modeling-page" id="toc-link-to-modeling-page" class="nav-link" data-scroll-target="#link-to-modeling-page">Link to Modeling Page</a></li>
   </ul>
 </nav>
     </div>
@@ -111,19 +183,272 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="data-introduction" class="level2">
 <h2 class="anchored" data-anchor-id="data-introduction">Data Introduction</h2>
-<p>The data that we are using for this project is a <a href="https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset?resource=download&amp;select=diabetes_binary_health_indicators_BRFSS2015.csv">Kaggle Date Set</a> investigating diabetes and its connection to a number of different quantitative and qualitative features. In total, the data set contains 21 features ranging from lifestyle decisions to income levels that were recorded in a survey performed by the CDC and a target variable of whether the survey respondent has diabetes. The data set contains 253,680 survey responses and is not balanced.</p>
+<p>The data that we are using for this project is a <a href="https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset?resource=download&amp;select=diabetes_binary_health_indicators_BRFSS2015.csv">Kaggle Date Set</a> investigating diabetes and its connection to a number of different quantitative and qualitative features. In total, the data set contains 21 features ranging from lifestyle decisions to income levels that were recorded in a survey performed by the CDC and a target variable of whether the survey respondent has diabetes. The dataset contains 253,680 survey responses and is not balanced.</p>
 <p>Of the 21 available features, 5 were selected to investigate and use in our models. These 5 features include:</p>
 <ul>
-<li>BMI:</li>
-<li>PhysActivity:</li>
-<li>AnyHealthcare:</li>
-<li>Income:</li>
-<li>Age:</li>
+<li>BMI: Body Mass Index of the individual (numeric)</li>
+<li>PhysActivity: Indicator of whether the individual has partaken in physical activity in the past 30 days (encoded 0 = no and 1 = yes)</li>
+<li>AnyHealthcare: Indicator of whether the individual has any kind of health care coverage (encoded 0 = no and 1 = yes)</li>
+<li>Smoker: Indicator of whether the individual has smoked at least 100 cigarettes in their life (encoded 0 = no and 1 = yes)</li>
+<li>GenHlth: Response of individual when asked to rate general health on scale of 1-5. (1 = excellent to 5 = poor)</li>
 </ul>
+<p>The goal of this project is to investigate these variables and their relation with out target variable:</p>
+<ul>
+<li>Diabetes_binary: Whether or not the individual has diabetes. (encoded 0 = no diabetes and 1 = prediabetic or diabetic)</li>
+</ul>
+<p>First, we will perform EDA. The purpose of EDA is to learn more about the distribution of the selected features and how features might interact with our target variable and other features in the model.</p>
+<p>After investigating these relationships, we will move on to our modelling step and build models that use the 5 features to predict whether or not in individual is diabetic. We will investigate multiple types of models and parameters of these models and compare model performance on a test set of data. Once we find an optimal set of parameters, we produce a champion model which can be used for future prediction.</p>
 </section>
-<section id="package-imports" class="level2">
-<h2 class="anchored" data-anchor-id="package-imports">Package Imports</h2>
-<p>First, we can import the necessary packages we need.</p>
+<section id="eda" class="level2">
+<h2 class="anchored" data-anchor-id="eda">EDA</h2>
+<section id="package-imports" class="level3">
+<h3 class="anchored" data-anchor-id="package-imports">Package Imports</h3>
+<p>First, we can import the necessary packages we need. Since we are working in the tidyverse, we will go ahead and load the tidyverse package to our session. We are also going to use the psych package to help out with EDA steps like doing rough distribution checks.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.5
+✔ forcats   1.0.0     ✔ stringr   1.5.1
+✔ ggplot2   3.5.2     ✔ tibble    3.2.1
+✔ lubridate 1.9.4     ✔ tidyr     1.3.1
+✔ purrr     1.2.0     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(psych)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'psych'
+
+The following objects are masked from 'package:ggplot2':
+
+    %+%, alpha</code></pre>
+</div>
+</div>
+</section>
+<section id="data-preprocessing" class="level3">
+<h3 class="anchored" data-anchor-id="data-preprocessing">Data Preprocessing</h3>
+<p>Now that we have the necessary package loaded to perform EDA on our data, we will move on to loading in and preprocessing our data. There is one main preprocessing step that is needed for this data, and that is changing categorical and binary features to factors. The features that we will be changing to factors are:</p>
+<ul>
+<li>PhysActivity: Indicator of whether the individual has partaken in physical activity in the past 30 days (encoded 0 = no and 1 = yes)</li>
+<li>AnyHealthcare: Indicator of whether the individual has any kind of health care coverage (encoded 0 = no and 1 = yes)</li>
+<li>Smoker: Indicator of whether the individual has smoked at least 100 cigarettes in their life (encoded 0 = no and 1 = yes)</li>
+</ul>
+<p>While GenHealth is categorical in a way (with numeric 1-5 being interpreted as a different category of one’s view of their health), I have decided to maintain this feature as integer due to the ordinal nature of the feature in hopes that the model is able to capture this ordinality. Also for general interpretability, a 1-5 rating is fairly simple to interpret as long as we keep in mind that 1 is the most healthy and 5 is the least.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in data</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="at">file =</span> <span class="st">"data/diabetes_binary_health_indicators_BRFSS2015.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 253680 Columns: 22
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+dbl (22): Diabetes_binary, HighBP, HighChol, CholCheck, BMI, Smoker, Stroke,...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Mutate data to create factors for binary variables</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>model_data <span class="ot">&lt;-</span> data <span class="sc">|&gt;</span> <span class="fu">select</span>(Diabetes_binary, BMI, PhysActivity, AnyHealthcare, Smoker, GenHlth) <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Diabetes_binary =</span> <span class="fu">ifelse</span>(Diabetes_binary <span class="sc">==</span> <span class="dv">1</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PhysActivity=</span> <span class="fu">ifelse</span>(PhysActivity <span class="sc">==</span> <span class="dv">1</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">AnyHealthcare =</span> <span class="fu">ifelse</span>(AnyHealthcare <span class="sc">==</span> <span class="dv">1</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Smoker =</span> <span class="fu">ifelse</span>(Smoker <span class="sc">==</span> <span class="dv">1</span>, <span class="st">"Yes"</span>, <span class="st">"No"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(<span class="st">"Diabetes_binary"</span>, <span class="st">"PhysActivity"</span>, <span class="st">"AnyHealthcare"</span>, <span class="st">"Smoker"</span>), as.factor))</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(model_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 6
+  Diabetes_binary   BMI PhysActivity AnyHealthcare Smoker GenHlth
+  &lt;fct&gt;           &lt;dbl&gt; &lt;fct&gt;        &lt;fct&gt;         &lt;fct&gt;    &lt;dbl&gt;
+1 No                 40 No           Yes           Yes          5
+2 No                 25 Yes          No            Yes          3
+3 No                 28 No           Yes           No           5
+4 No                 27 Yes          Yes           No           2
+5 No                 24 Yes          Yes           No           2
+6 No                 25 Yes          Yes           Yes          2</code></pre>
+</div>
+</div>
+<p>Great, the data turned out just as we expected.</p>
+</section>
+<section id="missingness-and-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="missingness-and-distribution">Missingness and Distribution</h3>
+<p>Next, we are going to check our data for missing values to ensure we have a complete dataset and don’t have a need to impute values.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Describe data using psych decribe to check missingness and realism</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(model_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 vars      n  mean   sd median trimmed  mad min max range  skew
+Diabetes_binary*    1 253680  1.14 0.35      1    1.05 0.00   1   2     1  2.08
+BMI                 2 253680 28.38 6.61     27   27.68 4.45  12  98    86  2.12
+PhysActivity*       3 253680  1.76 0.43      2    1.82 0.00   1   2     1 -1.20
+AnyHealthcare*      4 253680  1.95 0.22      2    2.00 0.00   1   2     1 -4.18
+Smoker*             5 253680  1.44 0.50      1    1.43 0.00   1   2     1  0.23
+GenHlth             6 253680  2.51 1.07      2    2.45 1.48   1   5     4  0.42
+                 kurtosis   se
+Diabetes_binary*     2.34 0.00
+BMI                 11.00 0.01
+PhysActivity*       -0.57 0.00
+AnyHealthcare*      15.48 0.00
+Smoker*             -1.95 0.00
+GenHlth             -0.38 0.00</code></pre>
+</div>
+</div>
+<p>Since we know that the we are expecting 253,680 samples in our data and n = 253,680 for each of our features, it looks like we have no missing values for any of our features. Additionally, the rough distributions of our numeric variables look to be reasonable. The only thing we might want to note is the max of the BMI feature. A BMI of 98 is extremely high so it is possible we might have outliers here. As for the binary features, we can interpret 1 as No and 2 as Yes since the as.factor() function alphabetically assigns factor levels. Everything looks to be reasonable for these as well, but it is worth noting that this dataset is heavily unbalanced in our target variable, with a mean of 1.14. This could influence model performance down the road as the model will be shown significantly more negatives than positives.</p>
+</section>
+<section id="categorical-features" class="level3">
+<h3 class="anchored" data-anchor-id="categorical-features">Categorical Features</h3>
+<p>For the next step of EDA, we will go ahead and make contingency tables for each of our categorical features in relation to our target variable in an effort to see if we can spot any interactions between each of the categorical features and our target. Since the number of samples is large, it might be easier to interpret these contingency tables if we turn them into proportions.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create proportional contingency tables for each categorical feature</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(model_data[, <span class="fu">c</span>(<span class="st">"Diabetes_binary"</span>, <span class="st">"PhysActivity"</span>)]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               PhysActivity
+Diabetes_binary         No        Yes
+            No  0.19197808 0.66868890
+            Yes 0.05147824 0.08785478</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(model_data[, <span class="fu">c</span>(<span class="st">"Diabetes_binary"</span>, <span class="st">"AnyHealthcare"</span>)]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               AnyHealthcare
+Diabetes_binary          No         Yes
+            No  0.043342006 0.817324976
+            Yes 0.005605487 0.133727531</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(model_data[, <span class="fu">c</span>(<span class="st">"Diabetes_binary"</span>, <span class="st">"Smoker"</span>)]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               Smoker
+Diabetes_binary         No        Yes
+            No  0.48970356 0.37096342
+            Yes 0.06712788 0.07220514</code></pre>
+</div>
+</div>
+<p>These contingency tables are a little difficult to interpret considering some of the features and our target are fairly unbalanced, so let’s try to investigate this in a slightly different way. We are really interested in seeing whether a larger than expected proportion of a specific class of the feature has diabetes. To help with this, we can investigate this through the lens of conditional probabilities. For a feature to have predictive power, we would expect <span class="math inline">\(P(\text{Diabetes = Yes | Feature = Yes}) \neq P(\text{Diabetes = Yes | Feature = No})\)</span>. In other words, the proportion of individuals with diabetes should differ between feature categories. We can investigate these conditional probabilities next.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create conditional tables for each categorical feature</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(PhysActivity) <span class="sc">|&gt;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">prop_diabetes =</span> <span class="fu">mean</span>(Diabetes_binary <span class="sc">==</span> <span class="st">"Yes"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  PhysActivity prop_diabetes
+  &lt;fct&gt;                &lt;dbl&gt;
+1 No                   0.211
+2 Yes                  0.116</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(AnyHealthcare) <span class="sc">|&gt;</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">prop_diabetes =</span> <span class="fu">mean</span>(Diabetes_binary <span class="sc">==</span> <span class="st">"Yes"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  AnyHealthcare prop_diabetes
+  &lt;fct&gt;                 &lt;dbl&gt;
+1 No                    0.115
+2 Yes                   0.141</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Smoker) <span class="sc">|&gt;</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">prop_diabetes =</span> <span class="fu">mean</span>(Diabetes_binary <span class="sc">==</span> <span class="st">"Yes"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  Smoker prop_diabetes
+  &lt;fct&gt;          &lt;dbl&gt;
+1 No             0.121
+2 Yes            0.163</code></pre>
+</div>
+</div>
+<p>These tables tell a more clear story regarding the predictive power of the features at hand. We can note that each of the categorical features seems to show slight differences in conditional probabilities. PhysActivity seems to be the strongest with the conditional probability of those individuals who did not partake in physical activity having diabetes being significantly higher than those that did. Smoker shows the second largest difference with smoking more than 100 cigarettes leading to a higher conditional probability. Finally, healthcare shows a minimal difference in probability with those having access to healthcare being slightly more likely to have diabetes. For the healthcare feature, it is worth noting that this is likely not causality since those who do not have access to healthcare might be living with undiagnosed diabetes or those that have diabetes are more likely to ensure to maintain healthcare in order to maintain treatment of their chronic condition.</p>
+</section>
+<section id="numeric-features" class="level3">
+<h3 class="anchored" data-anchor-id="numeric-features">Numeric Features</h3>
+<p>Next, we will look at the two numeric features we are planning to use in our model. For these, we should be able to create some tables and plots that might help us better understand the relationships at play.</p>
+<p>First, we will investigate the relationship between BMI and diabetes. First, we can create a table breaking down the summary statistics of BMI by diabetes status. Then, we can use a density plot to see how the density of BMI might differ for those that have diabetes vs.&nbsp;those that do not.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Summarize BMI based on diabetes status</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Diabetes_binary) <span class="sc">|&gt;</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_BMI =</span> <span class="fu">mean</span>(BMI),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_BMI =</span> <span class="fu">sd</span>(BMI)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 3
+  Diabetes_binary mean_BMI sd_BMI
+  &lt;fct&gt;              &lt;dbl&gt;  &lt;dbl&gt;
+1 No                  27.8   6.29
+2 Yes                 31.9   7.36</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Density plot filled by diabetes status</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> BMI, <span class="at">fill =</span> Diabetes_binary)) <span class="sc">+</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"BMI Density by Diabetes Status"</span>, <span class="at">x =</span> <span class="st">"BMI"</span>, <span class="at">y =</span> <span class="st">"Density"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="EDA_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Based on the table, we can see that the mean BMI for those with diabetes is slightly higher than those without. Interestingly, the spread of BMI for those with diabetes also seems to be slightly higher as demonstrated by the higher standard deviation. The density plot confirms these observations as the density plot of those with diabetes appears to be shifted to the right and wider than the density of those that do not have diabetes.</p>
+<p>Next, we will look at our GenHealth feature. We can perform the same process here, except instead of using a density plot, it might be helpful to use a bar chart of the proportions since the feature includes only integer values between 1 and 5.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Summarize GenHlth based by diabetes status</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Diabetes_binary) <span class="sc">|&gt;</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_BMI =</span> <span class="fu">mean</span>(GenHlth),</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_BMI =</span> <span class="fu">sd</span>(GenHlth)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 3
+  Diabetes_binary mean_BMI sd_BMI
+  &lt;fct&gt;              &lt;dbl&gt;  &lt;dbl&gt;
+1 No                  2.39   1.02
+2 Yes                 3.29   1.01</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot double bar graph of GenHlth by diabetes status</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> GenHlth, <span class="at">fill =</span> Diabetes_binary)) <span class="sc">+</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"Dodge"</span>) <span class="sc">+</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GenHlth by Diabetes Status"</span>, <span class="at">x =</span> <span class="st">"GenHlth"</span>, <span class="at">y =</span> <span class="st">"Number of Samples"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="EDA_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This tells us a similar story to BMI, as those with diabetes ranked themselves as less healthy on average than those without diabetes, as shown be the higher mean value for GenHlth. However, it is worth noting that the two groups do not demonstrate the difference in spread that was noted with BMI. The bar graph confirms this as the “peak” of the distribution appears to be shifted to the right.</p>
+<p>For this feature, it might also be helpful to look more into the conditional probabilities as well. Specifically, it might be interesting to look at <span class="math inline">\(P(\text{Diabetes | GenHelth)}\)</span>. To do this we can use a proportional bar graph.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot bar graph of conditional proportions for each GenHlth</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> GenHlth, <span class="at">fill =</span> Diabetes_binary)) <span class="sc">+</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"fill"</span>) <span class="sc">+</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GenHlth by Diabetes Status"</span>, <span class="at">x =</span> <span class="st">"GenHlth"</span>, <span class="at">y =</span> <span class="st">"Proportion of Samples"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="EDA_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This shows us more interesting interactions between these two variables as those that rank themselves in poorer general health are significantly more likely to have diabetes than those that do not.</p>
+<p>That wraps up the EDA portion, so now let’s move on to the models! Fisrt, since we made some changes to the dataset, we will go ahead and save it as an RDS file, so we can easily access it in our modeling notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save as an RDS</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(model_data, <span class="at">file =</span> <span class="st">"data/model_data.RDS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="link-to-modeling-page" class="level2">
+<h2 class="anchored" data-anchor-id="link-to-modeling-page">Link to Modeling Page</h2>
 <p><a href="Modeling.html">Click here for the Modeling Page</a></p>
 
 
