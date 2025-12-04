@@ -5,3 +5,4 @@
 .tar
 
 /.quarto/
+docker/api.tar

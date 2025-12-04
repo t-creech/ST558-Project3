@@ -40,9 +40,9 @@ function(BMI = BMI_mean,
   predict(fitted_model, pred_data)
 }
 
-#query with http://localhost:PORT/pred?BMI=20&PhysActivity=Yes&Smoker=No&AnyHealthcare=Yes&GenHlth=1
-#query with http://localhost:PORT/pred?BMI=40&PhysActivity=No&Smoker=Yes&AnyHealthcare=Yes&GenHlth=5
-#query with http://localhost:PORT/pred?BMI=40&PhysActivity=No
+#query with http://localhost:8000/pred?BMI=20&PhysActivity=Yes&Smoker=No&AnyHealthcare=Yes&GenHlth=1
+#query with http://localhost:8000/pred?BMI=40&PhysActivity=No&Smoker=Yes&AnyHealthcare=Yes&GenHlth=5
+#query with http://localhost:8000/pred?BMI=40&PhysActivity=No
 
 #* Provide info for project including name and URL of pages site
 #* @get /info
@@ -52,7 +52,7 @@ function(){
   paste(name, url, sep = "   ")
 }
 
-#http://localhost:PORT/info
+#http://localhost:8000/info
 
 #* Plot of confusion matrix
 #* @serializer png
@@ -63,4 +63,4 @@ function(){
   p <- autoplot(confusion_matrix, type = "heatmap")
   print(p)
 }
-#http://localhost:PORT/confusion
+#http://localhost:8000/confusion
